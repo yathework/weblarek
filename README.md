@@ -98,3 +98,159 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+## Данные
+
+### IProduct
+
+Описывает товар.
+
+    interface IProduct {
+        id: string;
+        description: string;
+        image: string;
+        title: string;
+        category: string;
+        price: number | null;
+    }
+
+- id — уникальный идентификатор товара.
+- description — описание.
+- image — путь к изображению.
+- title — название.
+- category — категория.
+- price — цена (null — товар недоступен).
+
+### IBuyer
+
+Описывает данные покупателя.
+
+    interface IBuyer {
+        payment: TPayment;
+        email: string;
+        phone: string;
+        address: string;
+    }
+
+- payment — способ оплаты.
+- email — электронная почта.
+- phone — телефон.
+- address — адрес доставки.
+
+### TPayment
+
+    type TPayment = 'card' | 'cash';
+
+- card — оплата картой.
+- cash — оплата наличными.
+
+
+### IOrderRequest
+
+Расширяет IBuyer и добавляет данные о заказе.
+
+    interface IOrderRequest extends IBuyer {
+        total: number;
+        items: string[];
+    }
+
+- total — сумма заказа.
+- items — массив id товаров.
+
+### IOrderResult
+
+Ответ сервера при оформлении заказа.
+
+    interface IOrderResult {
+        id: string;
+        total: number;
+    }
+
+- id — идентификатор заказа.
+- total — подтверждённая сумма заказа.
+
+### IProductListResponse
+
+Ответ сервера при запросе списка товаров.
+
+    interface IProductListResponse {
+        total: number;
+        items: IProduct[];
+    }
+
+- total — общее количество товаров.
+- items — массив товаров.
+
+
+## Модели данных
+
+### Класс Products
+
+Назначение: хранение каталога товаров и товара для подробного отображения.
+
+- Конструктор: constructor() — без параметров.
+- Поля:
+  - private items: IProduct[] — массив всех товаров.
+  - private preview: IProduct | null — товар для подробного отображения.
+- Методы:
+  - setItems(items: IProduct[]): void — сохраняет массив товаров.
+  - getItems(): IProduct[] — возвращает массив товаров.
+  - getItemById(id: string): IProduct | undefined — возвращает товар по id.
+  - setPreview(item: IProduct): void — сохраняет товар для подробного отображения.
+  - getPreview(): IProduct | null — возвращает товар для подробного отображения.
+
+
+
+### Класс Cart
+
+Назначение: хранение товаров, выбранных покупателем.
+
+- Конструктор: constructor() — без параметров.
+- Поля:
+  - private items: IProduct[] — массив товаров в корзине.
+- Методы:
+  - getItems(): IProduct[] — возвращает массив товаров.
+  - addItem(item: IProduct): void — добавляет товар.
+  - removeItem(item: IProduct): void — удаляет товар.
+  - clear(): void — очищает корзину.
+  - getTotalPrice(): number — общая стоимость (товары с price: null не учитываются).
+  - getItemCount(): number — количество товаров.
+  - hasItem(id: string): boolean — проверяет наличие товара по id.
+ 
+
+### Класс Buyer
+
+Назначение: хранение данных покупателя и их валидация.
+
+- Конструктор: constructor() — без параметров.
+- Поля:
+  - private payment: TPayment | null — способ оплаты.
+  - private email: string — email.
+  - private phone: string — телефон.
+  - private address: string — адрес.
+- Методы:
+  - setPayment(payment: TPayment): void — сохраняет способ оплаты.
+  - setEmail(email: string): void — сохраняет email.
+  - setPhone(phone: string): void — сохраняет телефон.
+  - setAddress(address: string): void — сохраняет адрес.
+  - getData(): IBuyer — возвращает все данные.
+  - clear(): void — очищает данные.
+  - validate(): Partial<Record<keyof IBuyer, string>> — возвращает объект с текстами ошибок. Если поле валидно — его нет в объекте.
+
+
+## Слой коммуникации
+
+Отвечает за взаимодействие с сервером. Использует композицию с классом Api.
+
+### Класс LarekApi
+
+Назначение: получение товаров с сервера и отправка заказов.
+
+- Конструктор: constructor(api: IApi) — принимает экземпляр API.
+- Поля:
+  - private api: IApi — экземпляр API.
+- Методы:
+  - getProducts(): Promise<IProductListResponse> — GET-запрос на /product/.
+  - postOrder(order: IOrderRequest): Promise<IOrderResult> — POST-запрос на /order/.
+ 
+
+
