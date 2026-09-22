@@ -27,7 +27,7 @@ console.log('Товары в корзине:', cartModel.getItems());
 console.log('Общая стоимость:', cartModel.getTotalPrice());
 console.log('Количество товаров:', cartModel.getItemCount());
 console.log('Наличие товара по id:', cartModel.hasItem(apiProducts.items[0].id));
-cartModel.removeItem(apiProducts.items[0]);
+cartModel.removeItem(apiProducts.items[0].id);
 console.log('Товары в корзине после удаления:', cartModel.getItems());
 cartModel.clear();
 console.log('Товары в корзине после очистки:', cartModel.getItems());
@@ -38,9 +38,12 @@ buyerModel.setEmail('test@test.ru');
 buyerModel.setPhone('+71234567890');
 buyerModel.setAddress('Spb Vosstania 1');
 console.log('Данные покупателя:', buyerModel.getData());
-console.log('Валидация:', buyerModel.validate());
+console.log('Валидация заполненных данных:', buyerModel.validate());
 buyerModel.clear();
 console.log('Данные покупателя после очистки:', buyerModel.getData());
+console.log('Валидация пустых данных:', buyerModel.validate());
+buyerModel.setEmail('test@test.ru');
+console.log('Валидация с частично заполненными данными:', buyerModel.validate());
 
 console.log('=== Запрос к серверу ===');
 larekApi.getProducts()
