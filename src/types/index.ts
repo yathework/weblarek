@@ -5,6 +5,12 @@ export interface IApi {
     post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
+export interface IEvents {
+    on<T extends object>(event: string, callback: (data: T) => void): void;
+    emit<T extends object>(event: string, data?: T): void;
+    trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void;
+}
+
 export type TPayment = 'card' | 'cash';
 
 export interface IProduct {
@@ -39,4 +45,8 @@ export interface IOrderResult {
 export interface IProductListResponse {
     total: number;
     items: IProduct[];
+}
+
+export interface ICardActions {
+    onClick: (event: MouseEvent) => void;
 }

@@ -1,56 +1,192 @@
 import './scss/styles.scss';
 import { Api } from './components/base/Api';
-import { API_URL } from './utils/constants';
-import { apiProducts } from './utils/data';
+import { API_URL, CDN_URL } from './utils/constants';
 import { Products } from './components/Models/Products';
 import { Cart } from './components/Models/Cart';
 import { Buyer } from './components/Models/Buyer';
 import { LarekApi } from './components/LarekApi';
+import { EventEmitter } from './components/base/Events'; // Если файл называется иначе, поправь путь
+import { ensureElement, cloneTemplate } from './utils/utils';
+import { IProduct, TPayment } from './types';
 
+import { Header } from './components/views/Header';
+import { Gallery } from './components/views/Gallery';
+import { Modal } from './components/views/Modal';
+import { CardCatalog } from './components/views/CardCatalog';
+import { CardPreview } from './components/views/CardPreview';
+import { CardBasket } from './components/views/CardBasket';
+import { Basket } from './components/views/Basket';
+import { OrderForm } from './components/views/OrderForm';
+import { ContactsForm } from './components/views/ContactsForm';
+import { Success } from './components/views/Success';
+
+const events = new EventEmitter();
 const api = new Api(API_URL);
 const larekApi = new LarekApi(api);
-const productsModel = new Products();
-const cartModel = new Cart();
-const buyerModel = new Buyer();
 
-console.log('=== Тестирование модели Products ===');
-productsModel.setItems(apiProducts.items);
-console.log('Массив товаров из каталога:', productsModel.getItems());
-console.log('Товар по id:', productsModel.getItemById('854cef69-976d-4c2a-a18c-2aa45046c390'));
-productsModel.setPreview(apiProducts.items[0]);
-console.log('Товар для подробного отображения:', productsModel.getPreview());
+const productsModel = new Products(events);
+const cartModel = new Cart(events);
+const buyerModel = new Buyer(events);
 
-console.log('=== Тестирование модели Cart ===');
-cartModel.addItem(apiProducts.items[0]);
-cartModel.addItem(apiProducts.items[1]);
-console.log('Товары в корзине:', cartModel.getItems());
-console.log('Общая стоимость:', cartModel.getTotalPrice());
-console.log('Количество товаров:', cartModel.getItemCount());
-console.log('Наличие товара по id:', cartModel.hasItem(apiProducts.items[0].id));
-cartModel.removeItem(apiProducts.items[0].id);
-console.log('Товары в корзине после удаления:', cartModel.getItems());
-cartModel.clear();
-console.log('Товары в корзине после очистки:', cartModel.getItems());
+const headerContainer = ensureElement<HTMLElement>('.header', document.body);
+const galleryContainer = ensureElement<HTMLElement>('.gallery', document.body);
+const modalContainer = ensureElement<HTMLElement>('#modal-container', document.body);
 
-console.log('=== Тестирование модели Buyer ===');
-buyerModel.setPayment('card');
-buyerModel.setEmail('test@test.ru');
-buyerModel.setPhone('+71234567890');
-buyerModel.setAddress('Spb Vosstania 1');
-console.log('Данные покупателя:', buyerModel.getData());
-console.log('Валидация заполненных данных:', buyerModel.validate());
-buyerModel.clear();
-console.log('Данные покупателя после очистки:', buyerModel.getData());
-console.log('Валидация пустых данных:', buyerModel.validate());
-buyerModel.setEmail('test@test.ru');
-console.log('Валидация с частично заполненными данными:', buyerModel.validate());
+const header = new Header(events, headerContainer);
+const gallery = new Gallery(galleryContainer);
+const modal = new Modal(events, modalContainer);
 
-console.log('=== Запрос к серверу ===');
+const basket = new Basket(events, cloneTemplate('#basket'));
+const orderForm = new OrderForm(events, cloneTemplate('#order') as HTMLFormElement);
+const contactsForm = new ContactsForm(events, cloneTemplate('#contacts') as HTMLFormElement);
+const success = new Success(events, cloneTemplate('#success'));
+
+const cardPreview = new CardPreview(cloneTemplate('#card-preview'), {
+    onClick: () => {
+        const item = productsModel.getPreview();
+        if (!item) return;
+        if (cartModel.hasItem(item.id)) {
+            cartModel.removeItem(item.id);
+        } else {
+            cartModel.addItem(item);
+        }
+        modal.close();
+    }
+});
+
+// Запрос к серверу
 larekApi.getProducts()
-    .then(data => {
-        productsModel.setItems(data.items);
-        console.log('Каталог товаров, полученный с сервера:', productsModel.getItems());
-    })
-    .catch(error => {
-        console.error('Ошибка при запросе к серверу:', error);
+    .then(data => productsModel.setItems(data.items))
+    .catch(err => console.error(err));
+
+// --- ПРЕЗЕНТЕР ---
+
+events.on('catalog:changed', () => {
+    const itemCards = productsModel.getItems().map(item => {
+        const card = new CardCatalog(cloneTemplate('#card-catalog'), {
+            onClick: () => events.emit('card:select', item)
+        });
+        return card.render({
+            title: item.title,
+            image: `${CDN_URL}${item.image}`,
+            category: item.category,
+            price: item.price
+        });
     });
+    gallery.render({ catalog: itemCards });
+});
+
+events.on('card:select', (item: IProduct) => {
+    productsModel.setPreview(item);
+});
+
+events.on('preview:changed', (item: IProduct) => {
+    const isInCart = cartModel.hasItem(item.id);
+    let buttonText = 'Купить';
+    let buttonDisabled = false;
+
+    if (item.price === null) {
+        buttonText = 'Недоступно';
+        buttonDisabled = true;
+    } else if (isInCart) {
+        buttonText = 'Удалить из корзины';
+    }
+
+    modal.render({
+        content: cardPreview.render({
+            title: item.title,
+            image: `${CDN_URL}${item.image}`,
+            category: item.category,
+            description: item.description,
+            price: item.price,
+            buttonText,
+            buttonDisabled
+        })
+    });
+    modal.open();
+});
+
+events.on('basket:changed', () => {
+    header.render({ counter: cartModel.getItemCount() });
+    basket.render({
+        items: cartModel.getItems().map((item, index) => {
+            const card = new CardBasket(cloneTemplate('#card-basket'), {
+                onClick: () => cartModel.removeItem(item.id)
+            });
+            return card.render({ title: item.title, price: item.price, index: index + 1 });
+        }),
+        total: cartModel.getTotalPrice(),
+        disabled: cartModel.getItemCount() === 0
+    });
+});
+
+events.on('basket:open', () => {
+    modal.render({ content: basket.render() });
+    modal.open();
+});
+
+events.on('order:open', () => {
+    modal.render({ content: orderForm.render() });
+});
+
+events.on('order.payment:change', (data: { value: TPayment }) => {
+    buyerModel.setPayment(data.value);
+});
+
+events.on('order.address:change', (data: { value: string }) => {
+    buyerModel.setAddress(data.value);
+});
+
+events.on('contacts.email:change', (data: { value: string }) => {
+    buyerModel.setEmail(data.value);
+});
+
+events.on('contacts.phone:change', (data: { value: string }) => {
+    buyerModel.setPhone(data.value);
+});
+
+events.on('buyer:changed', () => {
+    const errors = buyerModel.validate();
+    
+    const orderErrors = Object.values({ payment: errors.payment, address: errors.address }).filter(Boolean).join('; ');
+    orderForm.render({
+        payment: buyerModel.getData().payment,
+        address: buyerModel.getData().address,
+        valid: !errors.payment && !errors.address,
+        errors: orderErrors
+    });
+
+    const contactsErrors = Object.values({ email: errors.email, phone: errors.phone }).filter(Boolean).join('; ');
+    contactsForm.render({
+        email: buyerModel.getData().email,
+        phone: buyerModel.getData().phone,
+        valid: !errors.email && !errors.phone,
+        errors: contactsErrors
+    });
+});
+
+events.on('order:submit', () => {
+    modal.render({ content: contactsForm.render() });
+});
+
+events.on('contacts:submit', () => {
+    const buyerData = buyerModel.getData();
+    const orderData = {
+        ...buyerData,
+        payment: buyerData.payment as TPayment,
+        total: cartModel.getTotalPrice(),
+        items: cartModel.getItems().map(item => item.id)
+    };
+
+    larekApi.postOrder(orderData)
+        .then((result) => {
+            cartModel.clear();
+            buyerModel.clear();
+            modal.render({ content: success.render({ total: result.total }) });
+        })
+        .catch(err => console.error(err));
+});
+
+events.on('modal:close', () => {
+    modal.close();
+});
