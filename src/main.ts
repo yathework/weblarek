@@ -5,9 +5,9 @@ import { Products } from './components/Models/Products';
 import { Cart } from './components/Models/Cart';
 import { Buyer } from './components/Models/Buyer';
 import { LarekApi } from './components/LarekApi';
-import { EventEmitter } from './components/base/Events'; // Если файл называется иначе, поправь путь
+import { EventEmitter } from './components/base/Events';
 import { ensureElement, cloneTemplate } from './utils/utils';
-import { IProduct, TPayment } from './types';
+import { TPayment, IProduct } from './types';
 
 import { Header } from './components/views/Header';
 import { Gallery } from './components/views/Gallery';
@@ -37,24 +37,12 @@ const gallery = new Gallery(galleryContainer);
 const modal = new Modal(events, modalContainer);
 
 const basket = new Basket(events, cloneTemplate('#basket'));
-const orderForm = new OrderForm(events, cloneTemplate('#order') as HTMLFormElement);
-const contactsForm = new ContactsForm(events, cloneTemplate('#contacts') as HTMLFormElement);
+const orderForm = new OrderForm(events, cloneTemplate<HTMLFormElement>('#order'));
+const contactsForm = new ContactsForm(events, cloneTemplate<HTMLFormElement>('#contacts'));
 const success = new Success(events, cloneTemplate('#success'));
 
-const cardPreview = new CardPreview(cloneTemplate('#card-preview'), {
-    onClick: () => {
-        const item = productsModel.getPreview();
-        if (!item) return;
-        if (cartModel.hasItem(item.id)) {
-            cartModel.removeItem(item.id);
-        } else {
-            cartModel.addItem(item);
-        }
-        modal.close();
-    }
-});
+const cardPreview = new CardPreview(events, cloneTemplate('#card-preview'));
 
-// Запрос к серверу
 larekApi.getProducts()
     .then(data => productsModel.setItems(data.items))
     .catch(err => console.error(err));
@@ -64,11 +52,11 @@ larekApi.getProducts()
 events.on('catalog:changed', () => {
     const itemCards = productsModel.getItems().map(item => {
         const card = new CardCatalog(cloneTemplate('#card-catalog'), {
-            onClick: () => events.emit('card:select', item)
+            onClick: () => events.emit('card:select', item.id)
         });
         return card.render({
             title: item.title,
-            image: `${CDN_URL}${item.image}`,
+            image: { src: `${CDN_URL}${item.image}`, alt: item.title },
             category: item.category,
             price: item.price
         });
@@ -76,11 +64,17 @@ events.on('catalog:changed', () => {
     gallery.render({ catalog: itemCards });
 });
 
-events.on('card:select', (item: IProduct) => {
-    productsModel.setPreview(item);
+events.on('card:select', (id: string) => {
+    const item = productsModel.getItemById(id);
+    if (item) {
+        productsModel.setPreview(item);
+    }
 });
 
-events.on('preview:changed', (item: IProduct) => {
+events.on('preview:changed', () => {
+    const item = productsModel.getPreview();
+    if (!item) return;
+
     const isInCart = cartModel.hasItem(item.id);
     let buttonText = 'Купить';
     let buttonDisabled = false;
@@ -95,7 +89,7 @@ events.on('preview:changed', (item: IProduct) => {
     modal.render({
         content: cardPreview.render({
             title: item.title,
-            image: `${CDN_URL}${item.image}`,
+            image: { src: `${CDN_URL}${item.image}`, alt: item.title },
             category: item.category,
             description: item.description,
             price: item.price,
@@ -106,18 +100,34 @@ events.on('preview:changed', (item: IProduct) => {
     modal.open();
 });
 
+events.on('card:action', () => {
+    const item = productsModel.getPreview();
+    if (!item) return;
+
+    if (cartModel.hasItem(item.id)) {
+        cartModel.removeItem(item.id);
+    } else {
+        cartModel.addItem(item);
+    }
+    modal.close();
+});
+
 events.on('basket:changed', () => {
     header.render({ counter: cartModel.getItemCount() });
     basket.render({
         items: cartModel.getItems().map((item, index) => {
             const card = new CardBasket(cloneTemplate('#card-basket'), {
-                onClick: () => cartModel.removeItem(item.id)
+                onClick: () => events.emit('basket:item:remove', item.id)
             });
             return card.render({ title: item.title, price: item.price, index: index + 1 });
         }),
         total: cartModel.getTotalPrice(),
         disabled: cartModel.getItemCount() === 0
     });
+});
+
+events.on('basket:item:remove', (id: string) => {
+    cartModel.removeItem(id);
 });
 
 events.on('basket:open', () => {
@@ -187,6 +197,13 @@ events.on('contacts:submit', () => {
         .catch(err => console.error(err));
 });
 
+events.on('success:close', () => {
+    modal.close();
+});
+
 events.on('modal:close', () => {
     modal.close();
 });
+
+cartModel.clear();
+buyerModel.clear();

@@ -1,5 +1,5 @@
 import { Component } from '../base/Component';
-import { IEvents } from '../../types';
+import { IEvents } from '../base/Events';
 import { ensureElement } from '../../utils/utils';
 
 interface IBasket {
@@ -25,11 +25,7 @@ export class Basket extends Component<IBasket> {
     }
 
     set items(items: HTMLElement[]) {
-        if (items.length) {
-            this.listElement.replaceChildren(...items);
-        } else {
-            this.listElement.replaceChildren('Корзина пуста');
-        }
+        this.listElement.replaceChildren(...items);
     }
 
     set total(value: number) {

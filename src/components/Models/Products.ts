@@ -1,4 +1,5 @@
-import { IProduct, IEvents } from '../../types';
+import { IProduct } from '../../types';
+import { IEvents } from '../base/Events';
 
 export class Products {
     private items: IProduct[] = [];
@@ -21,7 +22,7 @@ export class Products {
 
     setPreview(item: IProduct): void {
         this.preview = item;
-        this.events.emit('preview:changed', item);
+        this.events.emit('preview:changed');
     }
 
     getPreview(): IProduct | null {

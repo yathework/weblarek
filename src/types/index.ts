@@ -5,13 +5,10 @@ export interface IApi {
     post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
-export interface IEvents {
-    on<T extends object>(event: string, callback: (data: T) => void): void;
-    emit<T extends object>(event: string, data?: T): void;
-    trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void;
-}
 
 export type TPayment = 'card' | 'cash';
+
+export type TCategoryKey = 'софт-скил' | 'хард-скил' | 'кнопка' | 'дополнительное' | 'другое';
 
 export interface IProduct {
     id: string;
@@ -47,6 +44,25 @@ export interface IProductListResponse {
     items: IProduct[];
 }
 
-export interface ICardActions {
-    onClick: (event: MouseEvent) => void;
+export interface ICard {
+    title: string;
+    price: number | null;
 }
+
+export interface IFormState {
+    valid: boolean;
+    errors: string;
+}
+
+export type TCardCatalog = Pick<IProduct, 'title' | 'category' | 'price'> & {
+    image: { src: string; alt: string };
+};
+
+export type TCardPreview = TCardCatalog & Pick<IProduct, 'description'> & {
+    buttonText: string;
+    buttonDisabled: boolean;
+};
+
+export type TCardBasket = Pick<IProduct, 'title' | 'price'> & {
+    index: number;
+};

@@ -1,4 +1,5 @@
-import { IBuyer, TPayment, TValidationErrors, IEvents } from '../../types';
+import { IBuyer, TPayment, TValidationErrors } from '../../types';
+import { IEvents } from '../base/Events';
 
 export class Buyer {
     private payment: TPayment | null = null;
@@ -48,9 +49,9 @@ export class Buyer {
     validate(): TValidationErrors {
         const errors: TValidationErrors = {};
         if (!this.payment) errors.payment = 'Не выбран вид оплаты';
-        if (!this.email) errors.email = 'Укажите эмэйл';
-        if (!this.phone) errors.phone = 'Укажите телефон';
-        if (!this.address) errors.address = 'Укажите адрес';
+        if (!this.email.trim()) errors.email = 'Укажите эмэйл';
+        if (!this.phone.trim()) errors.phone = 'Укажите телефон';
+        if (!this.address.trim()) errors.address = 'Укажите адрес';
         return errors;
     }
 }
