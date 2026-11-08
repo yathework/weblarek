@@ -3,9 +3,9 @@
 
 .modal {
   @include mixins.sublayer;
+  // height: max-content;
   display: none;
   justify-content: center;
-  align-items: center; /* Центрируем окно */
   background-color: $overlayBackground;
   z-index: 100;
   padding-top: 5vh;
@@ -21,14 +21,10 @@
     @include mixins.flex(column);
     gap: $defaultPadding;
     background-color: $background;
+    // min-height: 90vmin;
     border-radius: 3rem;
     box-sizing: border-box;
     position: relative;
-    
-    /* ФИКС: Запрещаем окну сжиматься, когда внутри нет контента */
-    flex-shrink: 0; 
-    max-height: 90vh;
-    overflow-y: auto;
   }
 
   &__content {
@@ -62,7 +58,7 @@
   }
 
   &__message {
-    white-space: nowrap;
+    white-space:nowrap;
     max-width: 60%;
     text-overflow: ellipsis;
     overflow: hidden;

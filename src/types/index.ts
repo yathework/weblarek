@@ -5,10 +5,11 @@ export interface IApi {
     post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
+import { categoryMap } from '../utils/constants';
 
 export type TPayment = 'card' | 'cash';
 
-export type TCategoryKey = 'софт-скил' | 'хард-скил' | 'кнопка' | 'дополнительное' | 'другое';
+export type TCategoryKey = keyof typeof categoryMap;
 
 export interface IProduct {
     id: string;

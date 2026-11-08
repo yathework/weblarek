@@ -26,6 +26,7 @@ export class Basket extends Component<IBasket> {
 
     set items(items: HTMLElement[]) {
         this.listElement.replaceChildren(...items);
+        this.container.classList.toggle('basket_empty', items.length === 0);
     }
 
     set total(value: number) {

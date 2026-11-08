@@ -78,7 +78,7 @@
 
 ### Класс EventEmitter
 
-Брокер событий реализует паттерн «Наблюдатель», позволяющий отправлять события и подписываться на события, происходящие в системе.
+Брокер событий реализует паттерн «Наблюдатель», позволяющий отправлять события и подписываться на события, происходящие в системе. Интерфейс `IEvents` экспортируется из этого же файла и используется во всех компонентах.
 
 - Конструктор: не принимает параметров.
 - Поля: `_events: Map<string | RegExp, Set<Function>>` — хранит коллекцию подписок на события.
@@ -133,6 +133,12 @@
 
 - card — оплата картой.
 - cash — оплата наличными.
+
+### TCategoryKey
+
+Тип ключей для объекта категорий. Выводится автоматически из `categoryMap` в `utils/constants.ts`.
+
+    type TCategoryKey = keyof typeof categoryMap;
 
 ### TValidationErrors
 
@@ -254,7 +260,7 @@
 
 ### Класс Header
 - **Назначение:** шапка сайта, отображает логотип и счетчик корзины.
-- **Конструктор:** `constructor(events: IEvents, container: HTMLElement)` — принимает брокер событий и корневой DOM-элемент.
+- **Конструктор:** `constructor(events: IEvents, container: HTMLElement)`.
 - **Поля:** `protected counterElement: HTMLElement` (счетчик), `protected basketButton: HTMLButtonElement` (кнопка корзины).
 - **Методы:** 
   - Сеттер `counter(value: number)` обновляет цифру на счетчике. 
@@ -262,32 +268,32 @@
 
 ### Класс Gallery
 - **Назначение:** каталог товаров на главной странице.
-- **Конструктор:** `constructor(container: HTMLElement)` — принимает корневой элемент каталога.
+- **Конструктор:** `constructor(container: HTMLElement)`.
 - **Поля:** `protected catalogElement: HTMLElement` — контейнер для карточек.
 - **Методы:** Сеттер `catalog(items: HTMLElement[])` принимает массив готовых DOM-элементов карточек и вставляет их в контейнер.
 
 ### Класс Modal
 - **Назначение:** универсальное модальное окно.
 - **Конструктор:** `constructor(events: IEvents, container: HTMLElement)`.
-- **Поля:** `protected closeButton: HTMLButtonElement` (крестик), `protected contentElement: HTMLElement` (контейнер для контента).
+- **Поля:** `protected closeButton: HTMLButtonElement`, `protected contentElement: HTMLElement`.
 - **Методы:** 
-  - `open()` (добавляет класс `modal_active`), `close()` (удаляет класс и очищает контент). 
+  - `open()` и `close()` управляют видимостью окна. 
   - Сеттер `content(value: HTMLElement)` вставляет переданный компонент. 
-  - При клике на крестик или на фон генерирует событие `modal:close`.
+  - При клике на крестик или фон генерирует событие `modal:close`.
 
 ### Абстрактный класс Card<T extends ICard>
 - **Назначение:** базовый класс для карточек.
 - **Конструктор:** `constructor(container: HTMLElement)`.
 - **Поля:** `protected titleElement: HTMLElement`, `protected priceElement: HTMLElement`.
-- **Методы:** Сеттеры `title(value: string)` и `price(value: number | null)`. Если цена `null`, выводит «Бесценно».
+- **Методы:** Сеттеры `title(value: string)` и `price(value: number | null)`.
 
 ### Класс CardCatalog extends Card<TCardCatalog>
 - **Назначение:** карточка в каталоге.
-- **Конструктор:** `constructor(container: HTMLElement, actions: { onClick: () => void })`.
+- **Конструктор:** `constructor(container: HTMLElement, actions: ICardActions)`.
 - **Поля:** `protected imageElement: HTMLImageElement`, `protected categoryElement: HTMLElement`.
 - **Методы:** 
-  - Сеттер `image(value: { src: string; alt: string })` устанавливает картинку и alt.
-  - Сеттер `category(value: string)` устанавливает текст и цветовую модификацию через `categoryMap`.
+  - Сеттер `image(value: { src: string; alt: string })` устанавливает картинку.
+  - Сеттер `category(value: string)` устанавливает текст и цветовую модификацию.
   - Вызывает переданный обработчик `onClick` при клике на карточку.
 
 ### Класс CardPreview extends Card<TCardPreview>
@@ -298,7 +304,7 @@
 
 ### Класс CardBasket extends Card<TCardBasket>
 - **Назначение:** карточка в корзине.
-- **Конструктор:** `constructor(container: HTMLElement, actions: { onClick: () => void })`.
+- **Конструктор:** `constructor(container: HTMLElement, actions: ICardActions)`.
 - **Поля:** `protected indexElement: HTMLElement`, `protected deleteButton: HTMLButtonElement`.
 - **Методы:** Сеттер `index(value: number)` устанавливает порядковый номер. Кнопка удаления вызывает переданный обработчик `onClick`.
 
@@ -306,53 +312,54 @@
 - **Назначение:** содержимое корзины.
 - **Конструктор:** `constructor(events: IEvents, container: HTMLElement)`.
 - **Поля:** `protected listElement`, `protected totalElement`, `protected buttonElement`.
-- **Методы:** Сеттеры `items` (рендерит массив карточек), `total` (устанавливает сумму), `disabled` (блокирует кнопку). При клике на «Оформить» генерирует событие `order:open`.
+- **Методы:** 
+  - Сеттеры `items`, `total`, `disabled`. 
+  - Сеттер `items` также управляет BEM-модификатором `basket_empty` для сжатия окна при пустой корзине. 
+  - При клике на «Оформить» генерирует событие `order:open`.
 
 ### Абстрактный класс Form<T extends IFormState>
 - **Назначение:** базовый класс для форм.
 - **Конструктор:** `constructor(events: IEvents, container: HTMLFormElement)`.
 - **Поля:** `protected submitButton: HTMLButtonElement`, `protected errorsElement: HTMLElement`.
-- **Методы:** Сеттеры `valid` (блокирует кнопку) и `errors` (выводит текст ошибки). Обрабатывает `submit` и генерирует событие `${container.name}:submit`.
+- **Методы:** Сеттеры `valid` и `errors`. Обрабатывает `submit` и генерирует событие `${container.name}:submit`.
 
 ### Класс OrderForm extends Form<IOrderForm>
 - **Назначение:** первая форма (способ оплаты и адрес).
 - **Конструктор:** `constructor(events: IEvents, container: HTMLFormElement)`.
 - **Поля:** `protected cardButton`, `protected cashButton`, `protected addressInput`.
-- **Методы:** 
-  - Сеттеры `payment` (подсвечивает кнопку) и `address` (вставляет текст). 
-  - Генерирует `order.payment:change` и `order.address:change` при вводе.
+- **Методы:** Сеттеры `payment`, `address`. Генерирует `order.payment:change` и `order.address:change`.
 
 ### Класс ContactsForm extends Form<IContactsForm>
 - **Назначение:** вторая форма (email и телефон).
 - **Конструктор:** `constructor(events: IEvents, container: HTMLFormElement)`.
 - **Поля:** `protected emailInput`, `protected phoneInput`.
-- **Методы:** Сеттеры `email` и `phone`. Генерирует события `contacts.email:change` и `contacts.phone:change`.
+- **Методы:** Сеттеры `email`, `phone`. Генерирует `contacts.email:change` и `contacts.phone:change`.
 
 ### Класс Success
 - **Назначение:** окно успешного оформления заказа.
 - **Конструктор:** `constructor(events: IEvents, container: HTMLElement)`.
 - **Поля:** `protected closeButton`, `protected descriptionElement`.
-- **Методы:** Сеттер `total(value: number)` выводит сумму списания. Кнопка генерирует событие `success:close`.
+- **Методы:** Сеттер `total(value: number)`. Кнопка генерирует событие `success:close`.
 
 ## События
 
-В приложении используется событийно-ориентированный подход. Все события генерируются через брокер `EventEmitter`.
+В приложении используется событийно-ориентированный подход. Все события генерируются через брокер `EventEmitter`. Согласно контракту брокера, все данные передаются в виде объектов.
 
-- `catalog:changed` — изменился массив товаров в каталоге (генерируется моделью `Products`).
-- `preview:changed` — изменился товар для подробного просмотра (генерируется моделью `Products`).
-- `basket:changed` — изменилось содержимое корзины (генерируется моделью `Cart`).
-- `buyer:changed` — изменились данные покупателя (генерируется моделью `Buyer`).
-- `card:select` — пользователь кликнул на карточку товара в каталоге (генерируется `CardCatalog`, передает `id`).
-- `basket:open` — пользователь кликнул на иконку корзины в шапке (генерируется `Header`).
-- `order:open` — пользователь кликнул «Оформить» в корзине (генерируется `Basket`).
-- `order.payment:change` — пользователь выбрал способ оплаты (генерируется `OrderForm`).
-- `order.address:change` — пользователь ввел адрес доставки (генерируется `OrderForm`).
-- `order:submit` — пользователь нажал «Далее» на первой форме (генерируется `OrderForm`).
-- `contacts.email:change` — пользователь ввел email (генерируется `ContactsForm`).
-- `contacts.phone:change` — пользователь ввел телефон (генерируется `ContactsForm`).
-- `contacts:submit` — пользователь нажал «Оплатить» на второй форме (генерируется `ContactsForm`).
+- `catalog:changed` — изменился массив товаров в каталоге (генерируется `Products`).
+- `preview:changed` — изменился товар для подробного просмотра (генерируется `Products`).
+- `basket:changed` — изменилось содержимое корзины (генерируется `Cart`).
+- `buyer:changed` — изменились данные покупателя (генерируется `Buyer`).
+- `card:select` — клик по карточке в каталоге (генерируется `CardCatalog`, передает `{ id: string }`).
+- `basket:open` — клик по иконке корзины (генерируется `Header`).
+- `order:open` — клик по «Оформить» (генерируется `Basket`).
+- `order.payment:change` — выбор способа оплаты (генерируется `OrderForm`).
+- `order.address:change` — ввод адреса (генерируется `OrderForm`).
+- `order:submit` — нажатие «Далее» (генерируется `OrderForm`).
+- `contacts.email:change` — ввод email (генерируется `ContactsForm`).
+- `contacts.phone:change` — ввод телефона (генерируется `ContactsForm`).
+- `contacts:submit` — нажатие «Оплатить» (генерируется `ContactsForm`).
 - `card:action` — нажатие на кнопку в превью товара (генерируется `CardPreview`).
-- `basket:item:remove` — нажатие на кнопку удаления товара в корзине (генерируется `CardBasket`, передает `id`).
+- `basket:item:remove` — нажатие на кнопку удаления в корзине (генерируется `CardBasket`, передает `{ id: string }`).
 - `success:close` — закрытие окна успешного заказа (генерируется `Success`).
 - `modal:close` — закрытие модального окна (генерируется `Modal`).
 
@@ -360,6 +367,6 @@
 
 Презентер реализован в файле `main.ts`. Он связывает модели данных и компоненты представления через брокер событий (`EventEmitter`). 
 
-Презентер подписывается на события от моделей (`catalog:changed`, `basket:changed` и т.д.) и от компонентов View (`card:select`, `basket:open` и т.д.). В обработчиках событий презентер вызывает методы моделей для изменения данных или методы компонентов View для обновления интерфейса. 
+Презентер подписывается на события от моделей и компонентов View. В обработчиках событий он вызывает методы моделей для изменения данных или методы компонентов View для обновления интерфейса. 
 
 В презентере отсутствует генерация событий — он только обрабатывает их. Архитектура приложения полностью соответствует паттерну MVP.

@@ -1,5 +1,6 @@
 import { Form } from './Form';
-import { IEvents, TPayment } from '../../types';
+import { TPayment } from '../../types';
+import { IEvents } from '../base/Events';
 import { ensureElement } from '../../utils/utils';
 
 interface IOrderForm {

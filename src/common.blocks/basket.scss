@@ -4,21 +4,13 @@
 .basket {
   @include mixins.flex(column);
   gap: 2rem;
-  
-  /* ФИКС: Высота подстраивается под контент, но не выше 70vh */
-  height: max-content; 
-  max-height: 70vh;    
-  width: 100%;
+  height: 60vh;
 
   &__list {
     padding: 0 2rem 0 0;
     margin: 0;
     flex-grow: 1;
     overflow-y: auto;
-    
-    /* ФИКС: Занимает всю ширину и имеет минимальную высоту */
-    width: 100%;
-    min-height: 150px;
   }
   
   &__list:not(:has(> *))::before {
@@ -53,5 +45,14 @@
       opacity: 0.5;
       margin-left: 4rem;
     }
+  }
+}
+
+/* ФИКС: Класс для пустой корзины, чтобы окно не растягивалось */
+.basket_empty {
+  height: auto;
+  
+  .basket__list {
+    min-height: 100px; /* Немного места, чтобы кнопка не липла к тексту */
   }
 }

@@ -7,7 +7,7 @@ import { Buyer } from './components/Models/Buyer';
 import { LarekApi } from './components/LarekApi';
 import { EventEmitter } from './components/base/Events';
 import { ensureElement, cloneTemplate } from './utils/utils';
-import { TPayment, IProduct } from './types';
+import { TPayment } from './types';
 
 import { Header } from './components/views/Header';
 import { Gallery } from './components/views/Gallery';
@@ -52,7 +52,7 @@ larekApi.getProducts()
 events.on('catalog:changed', () => {
     const itemCards = productsModel.getItems().map(item => {
         const card = new CardCatalog(cloneTemplate('#card-catalog'), {
-            onClick: () => events.emit('card:select', item.id)
+            onClick: () => events.emit('card:select', { id: item.id })
         });
         return card.render({
             title: item.title,
@@ -64,7 +64,7 @@ events.on('catalog:changed', () => {
     gallery.render({ catalog: itemCards });
 });
 
-events.on('card:select', (id: string) => {
+events.on<{ id: string }>('card:select', ({ id }) => {
     const item = productsModel.getItemById(id);
     if (item) {
         productsModel.setPreview(item);
@@ -117,7 +117,7 @@ events.on('basket:changed', () => {
     basket.render({
         items: cartModel.getItems().map((item, index) => {
             const card = new CardBasket(cloneTemplate('#card-basket'), {
-                onClick: () => events.emit('basket:item:remove', item.id)
+                onClick: () => events.emit('basket:item:remove', { id: item.id })
             });
             return card.render({ title: item.title, price: item.price, index: index + 1 });
         }),
@@ -126,7 +126,7 @@ events.on('basket:changed', () => {
     });
 });
 
-events.on('basket:item:remove', (id: string) => {
+events.on<{ id: string }>('basket:item:remove', ({ id }) => {
     cartModel.removeItem(id);
 });
 

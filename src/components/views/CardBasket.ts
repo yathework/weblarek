@@ -1,14 +1,16 @@
 import { Card } from './Card';
-import { IProduct, ICardActions } from '../../types';
+import { TCardBasket } from '../../types';
 import { ensureElement } from '../../utils/utils';
 
-type TCardBasket = Pick<IProduct, 'title' | 'price'> & { index: number };
+interface ICardActions {
+    onClick: () => void;
+}
 
 export class CardBasket extends Card<TCardBasket> {
     protected indexElement: HTMLElement;
     protected deleteButton: HTMLButtonElement;
 
-    constructor(container: HTMLElement, actions?: ICardActions) {
+    constructor(container: HTMLElement, actions: ICardActions) {
         super(container);
         this.indexElement = ensureElement<HTMLElement>('.basket__item-index', this.container);
         this.deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
